@@ -5,6 +5,8 @@ module Travis::API::V3
     belongs_to :branch
     after_create :schedule_first_build
 
+    attr_accessor :active
+
     scope :scheduled, -> { where("next_run <= '#{DateTime.now.utc}'") }
 
     TIME_INTERVALS = {
@@ -12,6 +14,10 @@ module Travis::API::V3
       "weekly"  => :week,
       "monthly" => :month
     }
+
+    def active?
+      @active
+    end
 
     def schedule_next_build(from: nil)
       # Make sure the next build will always be in the future
@@ -23,11 +29,15 @@ module Travis::API::V3
     end
 
     def schedule_first_build
+      puts "active? #{active?}"
       update_attribute(:next_run, DateTime.now.utc + SCHEDULER_INTERVAL)
     end
 
     def needs_new_build?
-      always_run? || !last_non_cron_build_time || last_non_cron_build_time < 24.hour.ago
+      return false unless active?
+      return true if always_run?
+      return true unless last_non_cron_build_time
+      return true if last_non_cron_build_time < 24.hour.ago
     end
 
     def skip_and_schedule_next_build
@@ -74,6 +84,10 @@ module Travis::API::V3
 
     def last_non_cron_build_time
       Build.find_by_id(branch.last_build_id)&.started_at&.to_datetime&.utc
+    end
+
+    def deactivate
+      update_attribute(:active, false)
     end
   end
 end
