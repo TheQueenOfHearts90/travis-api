@@ -29,7 +29,6 @@ module Travis::API::V3
     end
 
     def schedule_first_build
-      puts "active? #{active?}"
       update_attribute(:next_run, DateTime.now.utc + SCHEDULER_INTERVAL)
     end
 
@@ -51,7 +50,7 @@ module Travis::API::V3
     def enqueue
       if !branch.repository&.active? or !branch.exists_on_github
         Travis.logger.info "Removing cron #{self.id} because either the associated repo is inactive or branch doesn't exist on Github"
-        self.destroy
+        deactivate
         return false
       end
 
