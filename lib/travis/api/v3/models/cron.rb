@@ -7,7 +7,7 @@ module Travis::API::V3
 
     attr_accessor :active
 
-    scope :scheduled, -> { where("next_run <= '#{DateTime.now.utc}'") }
+    scope :scheduled, -> { where("active = 't'", "next_run <= '#{DateTime.now.utc}'") }
 
     TIME_INTERVALS = {
       "daily"   => :day,
